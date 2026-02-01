@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Signup | Harsha</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="navbar">
+  <div class="center-wrap">
+    <div class="logo">HARSHA</div>
+  </div>
+</div>
+
+<div class="container">
+  <h2>📝 Create Account</h2>
+
+  <div class="account-card">
+    <input id="name" placeholder="Full Name" style="width:100%;padding:10px;margin-bottom:10px;">
+    <input id="email" type="email" placeholder="Email" style="width:100%;padding:10px;margin-bottom:10px;">
+    <input id="password" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:10px;">
+
+    <button onclick="signup()" style="width:100%;padding:12px;background:#2874f0;color:white;border:none;">
+      Create Account
+    </button>
+  </div>
+</div>
+
+<script>
+function signup() {
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  if (!name || !email || !password) {
+    alert("All fields required");
+    return;
+  }
+
+  let users = JSON.parse(localStorage.getItem("users")) || [];
+  if (users.find(u => u.email === email)) {
+    alert("User already exists");
+    return;
+  }
+
+  users.push({ name, email, password });
+  localStorage.setItem("users", JSON.stringify(users));
+
+  alert("Account created! Please login.");
+  window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>

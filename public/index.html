@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Harsha</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+<script>
+const user = JSON.parse(localStorage.getItem("loggedInUser"));
+if (!user) {
+  window.location.href = "login.html";
+}
+</script>
+
+<!-- ================= TOP BAR ================= -->
+<div class="navbar">
+  <div class="center-wrap">
+
+    <div class="logo">HARSHA</div>
+
+    <!-- SEARCH BAR -->
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Search products..." 
+        autocomplete="off"
+      >
+
+      <!-- MIC -->
+      <span class="mic-icon" onclick="openVoice()" style="cursor:pointer;">🎤</span>
+
+      <div id="suggestions" class="search-suggestions"></div>
+    </div>
+
+    <div class="category-bar">
+      <button onclick="renderByCategory('all')">🟢 All</button>
+      <button onclick="renderByCategory('mobile')">📱 Mobile</button>
+      <button onclick="renderByCategory('watch')">⌚ Watch</button>
+      <button onclick="renderByCategory('audio')">🎧 Audio</button>
+      <button onclick="renderByCategory('laptop')">💻 Laptop</button>
+      <button onclick="renderByCategory('electronics')">📺 Electronics</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= HOME ================= -->
+<div class="container" id="homeSection">
+  <div id="categoryProducts"></div>
+</div>
+
+<!-- ================= CART ================= -->
+<div id="cartSection" class="section">
+  <div class="container">
+    <h2>My Cart</h2>
+    <div id="cartItems"></div>
+    <h3 id="cartTotal"></h3>
+    <button onclick="proceedToPay()" style="width:100%;padding:14px;margin-top:20px;background:#2874f0;color:white;border:none;border-radius:6px;font-size:16px;font-weight:bold;">
+      Proceed to Pay
+    </button>
+  </div>
+</div>
+<!-- ================= WISHLIST ================= -->
+<div id="wishlistSection" class="section">
+  <div class="container">
+    <h2>❤️ My Wishlist</h2>
+    <div id="wishlistItems"></div>
+  </div>
+</div>
+<!-- ================= ACCOUNT ================= -->
+<div id="accountSection" class="section">
+  <div class="container">
+
+    <h2>👤 My Account</h2>
+
+    <!-- 1️⃣ PROFILE -->
+    <div class="account-card">
+      <h3>📄 Profile</h3>
+        <p><strong>Name:</strong> <span id="userName"></span></p>
+        <p><strong>Email:</strong> <span id="userEmail"></span></p>
+    </div>
+
+    <!-- 2️⃣ ADDRESS -->
+    <div class="account-card">
+      <h3>🏠 Saved Address</h3>
+      <p>Flat 101, Street Name</p>
+      <p>Hyderabad, Telangana</p>
+      <p>India - 500001</p>
+    </div>
+
+    <!-- 3️⃣ ORDER HISTORY -->
+    <div class="account-card">
+      <h3>📦 Order History</h3>
+      <div id="orderHistory"></div>
+    </div>
+
+    <!-- 4️⃣ WISHLIST -->
+    <div class="account-card">
+      <h3>❤️ Wishlist</h3>
+      <div id="wishlistItems"></div>
+    </div>
+
+    <!-- 5️⃣ SETTINGS -->
+    <div class="account-card">
+      <h3>⚙️ Settings</h3>
+      <button onclick="clearCart()">🗑 Clear Cart</button>
+      <button onclick="clearWishlist()">💔 Clear Wishlist</button>
+      <button onclick="logout()">🚪 Logout</button>
+    </div>
+
+  </div>
+</div>
+<!-- ================= BOTTOM NAV ================= -->
+<div class="bottom-nav">
+
+  <button onclick="showHome(this)" class="active">
+    🏠<br>Home
+  </button>
+
+  <!-- 🛒 CART WITH BADGE -->
+  <button onclick="showCart(this)" class="cart-btn">
+    🛒
+    <span id="cartCount" class="badge">0</span>
+    <br>Cart
+  </button>
+
+  <!-- ❤️ WISHLIST WITH BADGE -->
+  <button onclick="showWishlist(this)" class="wishlist-btn">
+    ❤️
+    <span id="wishlistCount" class="badge">0</span>
+    <br>Wishlist
+  </button>
+
+  <button onclick="showAccount(this)">
+    👤<br>Account
+  </button>
+
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+if (!loggedInUser) {
+  window.location.href = "login.html";
+}
+let allProducts = [];
+let filteredProducts = [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+/* 🔥 STEP 3: ORDER HISTORY */
+let orders = JSON.parse(localStorage.getItem("orders")) || [];
+function loadOrders() {
+  const box = document.getElementById("orderHistory");
+  if (!box) return;
+
+  const orders = JSON.parse(localStorage.getItem("orders")) || [];
+
+  if (orders.length === 0) {
+    box.innerHTML = "<p>No orders yet</p>";
+    return;
+  }
+
+  box.innerHTML = orders.map((o, i) => `
+    <div style="margin-bottom:15px;padding:10px;border-bottom:1px solid #ddd;">
+      <p>🛒 <strong>${o.name}</strong> — ₹${o.price}</p>
+      <p>📅 ${o.date}</p>
+      <p>📦 Status: <b>${o.status}</b></p>
+
+      <button onclick="cancelOrder(${i})"
+        style="background:#ff4d4d;color:white;border:none;padding:5px 10px;border-radius:4px;">
+        ❌ Cancel
+      </button>
+
+      <button onclick="downloadInvoice(${i})"
+        style="margin-left:5px;background:#2874f0;color:white;border:none;padding:5px 10px;border-radius:4px;">
+        🧾 Invoice
+      </button>
+    </div>
+  `).join("");
+}
+function logout() {
+  localStorage.removeItem("loggedInUser");
+  window.location.replace("login.html");
+}
+function loadUserProfile() {
+  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!user) return;
+
+  document.getElementById("userName").innerText = user.name;
+  document.getElementById("userEmail").innerText = user.email;
+}
+const searchInput = document.getElementById("searchInput");
+const suggestionBox = document.getElementById("suggestions");
+/* 👤 LOAD USER INFO */
+const loggedUser = JSON.parse(localStorage.getItem("user"));
+if (loggedUser) {
+  document.getElementById("userName").innerText = loggedUser.name;
+  document.getElementById("userEmail").innerText = loggedUser.email;
+}
+/* LOAD PRODUCTS */
+fetch("http://localhost:3000/products")
+  .then(res => res.json())
+  .then(data => {
+    allProducts = data;
+    filteredProducts = data;
+    renderByCategory("all");
+  });
+
+function renderStars(r) {
+  return "★".repeat(Math.floor(r)).padEnd(5, "☆");
+}
+
+/* AUTOCOMPLETE */
+searchInput.addEventListener("keyup", () => {
+  const q = searchInput.value.toLowerCase();
+  suggestionBox.innerHTML = "";
+
+  if (!q) {
+    suggestionBox.style.display = "none";
+    filteredProducts = allProducts;
+    renderByCategory("all");
+    return;
+  }
+
+  const matches = allProducts.filter(p =>
+    p.name.toLowerCase().includes(q)
+  );
+
+  matches.forEach(p => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${p.name}</strong><br><small>₹${p.price}</small>`;
+    div.onclick = () => window.location.href = `product.html?id=${p.id}`;
+    suggestionBox.appendChild(div);
+  });
+
+  suggestionBox.style.display = matches.length ? "block" : "none";
+  filteredProducts = matches;
+  renderByCategory("all");
+});
+
+/* PRODUCTS */
+function renderByCategory(type) {
+  categoryProducts.innerHTML = "";
+  const categories = {
+    mobile: "📱 Mobiles",
+    watch: "⌚ Watches",
+    audio: "🎧 Audio",
+    laptop: "💻 Laptops",
+    electronics: "📺 Electronics"
+  };
+
+  for (let cat in categories) {
+    if (type !== "all" && cat !== type) continue;
+    const items = filteredProducts.filter(p => p.category === cat);
+    if (!items.length) continue;
+
+    categoryProducts.innerHTML += `
+      <div class="category-section">
+        <h2>${categories[cat]}</h2>
+        <div class="product-row">
+          ${items.map(p => `
+            <div class="product">
+              <div class="image-box">
+                ${p.discountPercent ? `
+                  <span class="discount-badge hot-deal">
+                   🔥 ${p.discountPercent}% OFF
+                  </span>
+                ` : ""}
+               <img src="${p.image}">
+              </div>
+              <div class="rating">
+                <span class="stars">${renderStars(p.rating || 4.5)}</span>
+                <span class="rating-value">${p.rating || 4.5}</span>
+              </div>
+              <div class="price-section">
+                ${p.originalPrice ? `<div class="original-price">❌ <span>₹${p.originalPrice}</span></div>` : ""}
+                <div class="discounted-price">✅ <span>₹${p.price}</span></div>
+              </div>
+              <h3>${p.name}</h3>
+
+              <div class="product-actions">
+               <div class="action-row">
+                 <button class="add-cart-btn" onclick="addToCart(${p.id})">Add to Cart</button>
+                 <button class="buy-now-btn" onclick="buyNow(${p.id})">Buy Now</button>
+               </div>
+
+               <button 
+                 style="background:#ff4081;color:white;border:none;padding:10px;border-radius:6px;font-weight:bold;"
+                 onclick="addToWishlist(${p.id})">
+                 ❤️ Add to Wishlist
+               </button>
+
+               <button class="view-btn" onclick="viewDetails(${p.id})">View Details</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>`;
+  }
+}
+let wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+/* CART FUNCTIONS */
+function addToCart(id) {
+  const p = allProducts.find(x => x.id === id);
+  const e = cart.find(x => x.id === id);
+
+  e ? e.qty++ : cart.push({ ...p, qty: 1 });
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount(); // 🔥 IMPORTANT
+  alert("Added to cart");
+}
+function updateCartCount() {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  const count = cart.reduce((sum, item) => sum + item.qty, 0);
+
+  const cartBadge = document.getElementById("cartCount");
+  if (cartBadge) {
+    cartBadge.innerText = count;
+    cartBadge.style.display = count > 0 ? "inline-block" : "none";
+  }
+}
+updateCartCount();
+function addToWishlist(id) {
+  const p = allProducts.find(x => x.id === id);
+  if (!wishlist.find(x => x.id === id)) {
+    wishlist.push(p);
+    localStorage.setItem("wishlist", JSON.stringify(wishlist));
+    alert("Added to wishlist ❤️");
+    updateWishlistCount(); // 🔥 IMPORTANT
+  }
+}
+function loadWishlist() {
+  const box = document.getElementById("wishlistItems");
+  const accountBox = document.getElementById("accountWishlist");
+
+  const html = wishlist.length
+    ? wishlist.map(p => `
+        <div class="cart-item">
+          <img src="${p.image}">
+          <div class="cart-details">
+            <h4>${p.name}</h4>
+            <p>₹${p.price}</p>
+          </div>
+        </div>
+      `).join("")
+    : "<p>❤️ Wishlist is empty</p>";
+
+  if (box) box.innerHTML = html;
+  if (accountBox) accountBox.innerHTML = html;
+}
+function showWishlist(b){
+  homeSection.style.display = "none";
+  cartSection.style.display = "none";
+  accountSection.style.display = "none";
+  wishlistSection.style.display = "block";
+
+  loadWishlist();   // refresh wishlist
+  setActive(b);
+}
+function clearWishlist() {
+  wishlist = [];
+  localStorage.removeItem("wishlist");
+  updateWishlistCount();
+  document.getElementById("wishlistItems").innerHTML = "<p>❤️ Wishlist is empty</p>";
+}
+function updateWishlistCount() {
+  const badge = document.getElementById("wishlistCount");
+  if (!badge) return;
+
+  badge.innerText = wishlist.length;
+  badge.style.display = wishlist.length ? "block" : "none";
+}
+updateWishlistCount();
+wishlistSection.style.display = "none";
+/* 🗑 CLEAR CART */
+function clearCart() {
+  localStorage.removeItem("cart");
+  cart = [];
+  updateCartCount(); // 🔥 UPDATE BADGE
+  alert("Cart cleared successfully!");
+}
+function addToWishlist(id) {
+  const p = allProducts.find(x => x.id === id);
+  if (wishlist.some(x => x.id === id)) {
+    alert("Already in wishlist ❤️");
+    return;
+  }
+  wishlist.push(p);
+  localStorage.setItem("wishlist", JSON.stringify(wishlist));
+  updateWishlistCount();
+}
+
+function loadCart() {
+  cartItems.innerHTML = "";
+  let total = 0;
+  if (!cart.length) {
+    cartItems.innerHTML = "<p>🛒 Cart is empty</p>";
+    cartTotal.innerText = "";
+    return;
+  }
+  cart.forEach((i, idx) => {
+    total += i.price * i.qty;
+    cartItems.innerHTML += `
+      <div class="cart-item">
+        <img src="${i.image}">
+        <div class="cart-details">
+          <h4>${i.name}</h4>
+          <p>₹${i.price} × ${i.qty}</p>
+          <button onclick="removeItem(${idx})">Remove</button>
+        </div>
+      </div>`;
+  });
+  cartTotal.innerText = "Total Amount: ₹" + total;
+}
+
+function removeItem(i) {
+  cart.splice(i, 1);
+  localStorage.setItem("cart", JSON.stringify(cart));
+  loadCart();
+}
+function cancelOrder(index) {
+  let orders = JSON.parse(localStorage.getItem("orders")) || [];
+
+  if (!confirm("Are you sure you want to cancel this order?")) return;
+
+  orders.splice(index, 1);
+  localStorage.setItem("orders", JSON.stringify(orders));
+
+  loadOrders(); // refresh UI
+}
+function updateOrderStatus() {
+  let orders = JSON.parse(localStorage.getItem("orders")) || [];
+
+  orders = orders.map(o => {
+    if (o.status === "Placed") o.status = "Shipped";
+    else if (o.status === "Shipped") o.status = "Delivered";
+    return o;
+  });
+
+  localStorage.setItem("orders", JSON.stringify(orders));
+}
+function downloadInvoice(index) {
+  const { jsPDF } = window.jspdf;
+  const orders = JSON.parse(localStorage.getItem("orders")) || [];
+  const o = orders[index];
+
+  if (!o) {
+    alert("Invoice data not found");
+    return;
+  }
+
+  const pdf = new jsPDF();
+
+  // Border
+  pdf.rect(10, 10, 190, 277);
+
+  // Title
+  pdf.setFontSize(16);
+  pdf.text("HARSHA - Order Invoice", 20, 30);
+
+  pdf.setFontSize(12);
+  pdf.text(`Product: ${o.name}`, 20, 60);
+  pdf.text(`Price: ₹${o.price}`, 20, 70);
+  pdf.text(`Quantity: ${o.qty || 1}`, 20, 80);
+  pdf.text(`Order Date: ${o.date}`, 20, 90);
+  pdf.text(`Payment Mode: ${o.payment}`, 20, 100);
+  pdf.text(`Status: ${o.status}`, 20, 110);
+
+  pdf.save(`Invoice_${o.name}.pdf`);
+}
+function buyNow(id) {
+  const p = allProducts.find(x => x.id === id);
+  localStorage.setItem("checkoutItem", JSON.stringify({ ...p, qty: 1 }));
+  window.location.href = "checkout.html";
+}
+function proceedToPay() {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+  if (cart.length === 0) {
+    alert("Cart is empty");
+    return;
+  }
+
+  // ✅ Go to checkout page (3-step flow)
+  window.location.href = "checkout.html";
+}
+function viewDetails(id) {
+  window.location.href = `product.html?id=${id}`;
+}
+
+/* NAV */
+function showHome(b){homeSection.style.display="block";cartSection.style.display="none";accountSection.style.display="none";setActive(b);}
+function showCart(b){homeSection.style.display="none";accountSection.style.display="none";cartSection.style.display="block";loadCart();setActive(b);}
+function showAccount(b){
+  homeSection.style.display="none";
+  cartSection.style.display="none";
+  accountSection.style.display="block";
+
+  loadOrders();
+  loadWishlist();   // ❤️ IMPORTANT
+  loadUserProfile();
+  setActive(b);
+}
+function setActive(b){document.querySelectorAll(".bottom-nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");}
+
+/* 🎤 REAL VOICE SEARCH */
+let recognition;
+function openVoice() {
+  document.getElementById("voiceOverlay").style.display = "flex";
+
+  if (!("webkitSpeechRecognition" in window)) {
+    alert("Voice search not supported");
+    return;
+  }
+
+  recognition = new webkitSpeechRecognition();
+  recognition.lang = "en-IN";
+  recognition.start();
+
+  recognition.onresult = function(event) {
+    const text = event.results[0][0].transcript;
+    searchInput.value = text;
+    searchInput.dispatchEvent(new Event("keyup"));
+    closeVoice();
+  };
+
+  recognition.onerror = closeVoice;
+}
+
+function closeVoice() {
+  document.getElementById("voiceOverlay").style.display = "none";
+  if (recognition) recognition.stop();
+}
+</script>
+
+<!-- 🎤 VOICE OVERLAY -->
+<div id="voiceOverlay" class="voice-overlay">
+  <div class="voice-box">
+    <span class="close-voice" onclick="closeVoice()">✕</span>
+    <div class="voice-content">
+      <p class="listening-text">Listening...</p>
+      <div class="mic-circle">🎤</div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/products.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html> 

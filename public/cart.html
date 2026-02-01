@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MyAmazon | Cart</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<div class="navbar">
+    <div class="logo">MyAmazon</div>
+    <div>
+        <a href="order-history.html">📦 Orders</a>
+        <a href="cart.html">🛒 Cart</a>
+    </div>
+</div>
+
+<!-- ===== PAGE CONTENT ===== -->
+<div class="container">
+
+<h1>🛒 Shopping Cart</h1>
+
+<div id="cartItems"></div>
+
+<h2 id="grandTotal"></h2>
+
+<div id="orderBtn"></div>
+
+<br>
+<a href="index.html" style="font-weight:bold;">⬅ Continue Shopping</a>
+
+</div>
+
+<script>
+function loadCart() {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const cartItemsDiv = document.getElementById("cartItems");
+    const grandTotalDiv = document.getElementById("grandTotal");
+    const orderBtnDiv = document.getElementById("orderBtn");
+
+    cartItemsDiv.innerHTML = "";
+    grandTotalDiv.innerText = "";
+    orderBtnDiv.innerHTML = "";
+
+    if (cart.length === 0) {
+        cartItemsDiv.innerHTML = "<p>Your cart is empty</p>";
+        return;
+    }
+
+    let grandTotal = 0;
+
+    cart.forEach((item, index) => {
+        const itemTotal = item.price * item.qty;
+        grandTotal += itemTotal;
+
+        cartItemsDiv.innerHTML += `
+            <div class="product">
+                <img src="${item.image}" alt="${item.name}">
+
+                <div>
+                    <h3>${item.name}</h3>
+                    <p>Price: ₹${item.price}</p>
+
+                    <div style="margin:10px 0;">
+                        <button onclick="decreaseQty(${index})">➖</button>
+                        <strong style="margin:0 12px;">${item.qty}</strong>
+                        <button onclick="increaseQty(${index})">➕</button>
+                    </div>
+
+                    <p><strong>Total: ₹${itemTotal}</strong></p>
+
+                    <button class="remove" onclick="removeItem(${index})">
+                        Remove
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    grandTotalDiv.innerText = "Grand Total: ₹" + grandTotal;
+
+    orderBtnDiv.innerHTML = `
+        <button onclick="placeOrder()" style="padding:14px 30px; font-size:18px;">
+            Place Order
+        </button>
+    `;
+}
+
+/* ===== CART ACTIONS ===== */
+function increaseQty(index) {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    cart[index].qty += 1;
+    localStorage.setItem("cart", JSON.stringify(cart));
+    loadCart();
+}
+
+function decreaseQty(index) {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    cart[index].qty -= 1;
+
+    if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    loadCart();
+}
+
+function removeItem(index) {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    cart.splice(index, 1);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    loadCart();
+}
+
+function placeOrder() {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    if (cart.length === 0) return;
+
+    let orders = JSON.parse(localStorage.getItem("orders")) || [];
+    let total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+    orders.push({
+        id: orders.length + 1,
+        date: new Date().toDateString(),
+        items: cart,
+        total: total
+    });
+
+    localStorage.setItem("orders", JSON.stringify(orders));
+    localStorage.removeItem("cart");
+
+    alert("Order placed successfully!");
+    window.location.href = "order-history.html";
+}
+
+// Load cart
+loadCart();
+</script>
+
+</body>
+</html>

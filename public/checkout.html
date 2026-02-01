@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Checkout | Harsha</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="navbar">
+  <div class="center-wrap">
+    <div class="logo">HARSHA</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 🔹 STEP INDICATOR -->
+  <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+    <strong>1️⃣ Address</strong>
+    <strong>2️⃣ Order Summary</strong>
+    <strong>3️⃣ Payment</strong>
+  </div>
+
+  
+<!-- ================= STEP 1 ================= -->
+<div id="step1" class="checkout-step active">
+  <h3>📍 Delivery Address</h3>
+
+  <textarea id="addressBox"
+    rows="4"
+    style="width:100%;padding:12px;border-radius:6px;"></textarea>
+
+  <br><br>
+
+  <button onclick="saveAddress()"
+    style="background:#2874f0;color:white;padding:12px;border:none;border-radius:6px;">
+    Save & Continue
+  </button>
+</div>
+
+<!-- ================= STEP 2 ================= -->
+<div id="step2" class="checkout-step">
+  <h3>🧾 Order Summary</h3>
+
+  <div id="orderItems"></div>
+  <h3 id="orderTotal"></h3>
+
+  <button onclick="goToPayment()">Continue</button>
+</div>
+
+<!-- ================= STEP 3 ================= -->
+<div id="step3" class="checkout-step">
+  <h3>💳 Payment Method</h3>
+
+  <label><input type="radio" name="payment" checked> Cash on Delivery</label><br><br>
+  <label><input type="radio" name="payment"> UPI / Google Pay</label><br><br>
+  <label><input type="radio" name="payment"> Debit / Credit Card</label><br><br>
+
+  <button onclick="placeOrder()">Place Order</button>
+</div>
+</div>
+<script>
+const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+/* STEP CONTROLLER */
+function showStep(step) {
+  document.querySelectorAll(".checkout-step")
+    .forEach(s => s.classList.remove("active"));
+
+  document.getElementById("step" + step)
+    .classList.add("active");
+}
+
+/* STEP 1 → STEP 2 */
+function saveAddress() {
+  const address = document.getElementById("addressBox").value.trim();
+  if (!address) {
+    alert("Please enter address");
+    return;
+  }
+
+  localStorage.setItem("userAddress", address);
+  loadOrderSummary();
+  showStep(2);
+}
+
+/* LOAD ORDER SUMMARY */
+function loadOrderSummary() {
+  let total = 0;
+  const box = document.getElementById("orderItems");
+  box.innerHTML = "";
+
+  cart.forEach(item => {
+    total += item.price * item.qty;
+    box.innerHTML += `<p>${item.name} — ₹${item.price} × ${item.qty}</p>`;
+  });
+
+  document.getElementById("orderTotal").innerText =
+    "Total Amount: ₹" + total;
+}
+
+/* STEP 2 → STEP 3 */
+function goToPayment() {
+  showStep(3);
+}
+
+/* FINAL ORDER */
+function placeOrder() {
+  if (!cart.length) {
+    alert("Cart empty");
+    return;
+  }
+
+  let orders = JSON.parse(localStorage.getItem("orders")) || [];
+cart.forEach(item => {
+  orders.push({
+  name: item.name,
+  price: item.price,
+  qty: item.qty || 1,
+  date: new Date().toDateString(),
+  payment: "Cash on Delivery",
+  status: "Placed"
+});
+});
+  localStorage.setItem("orders", JSON.stringify(orders));
+  localStorage.removeItem("cart");
+
+  window.location.href = "payment-success.html";
+}
+</script>
+
+</body>
+</html>

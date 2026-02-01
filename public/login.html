@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login | Harsha</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Firebase SDKs (COMPAT version for simple usage) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<div class="navbar">
+  <div class="center-wrap">
+    <div class="logo">HARSHA</div>
+  </div>
+</div>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div class="container">
+  <h2>🔐 Login</h2>
+
+  <!-- ================= EMAIL LOGIN ================= -->
+  <div class="account-card">
+    <h3>📧 Login with Email</h3>
+
+    <input id="email" type="email" placeholder="Email"
+      style="width:100%;padding:10px;margin-bottom:10px;">
+
+    <input id="password" type="password" placeholder="Password"
+      style="width:100%;padding:10px;margin-bottom:10px;">
+
+    <button onclick="emailLogin()"
+      style="width:100%;padding:12px;background:#ff9900;border:none;font-weight:bold;">
+      Login with Email
+    </button>
+  </div>
+
+  <br>
+
+  <!-- ================= MOBILE OTP LOGIN ================= -->
+  <div class="account-card">
+    <h3>📱 Login with Mobile OTP</h3>
+
+    <input id="mobile" placeholder="10-digit Mobile Number"
+      style="width:100%;padding:10px;margin-bottom:10px;">
+
+    <!-- REQUIRED FOR FIREBASE OTP -->
+    <div id="recaptcha-container"></div>
+
+    <button onclick="sendOTP()"
+      style="width:100%;padding:12px;background:#2874f0;border:none;color:white;">
+      Send OTP
+    </button>
+
+    <input id="otp" placeholder="Enter OTP"
+      style="width:100%;padding:10px;margin:10px 0;">
+
+    <button onclick="verifyOTP()"
+      style="width:100%;padding:12px;background:#2e7d32;border:none;color:white;">
+      Verify OTP
+    </button>
+  </div>
+
+  <p style="margin-top:15px;">
+    New user? <a href="signup.html">Create account</a>
+  </p>
+</div>
+
+<!-- ================= FIREBASE CONFIG ================= -->
+<script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyC_xxxxxxx",
+  authDomain: "harsha-ecommerce.firebaseapp.com",
+  projectId: "harsha-ecommerce",
+  storageBucket: "harsha-ecommerce.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
+};
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+</script>
+
+<!-- ================= FIREBASE OTP LOGIC ================= -->
+<script>
+  // reCAPTCHA (Invisible)
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+    "recaptcha-container",
+    { size: "invisible" }
+  );
+
+  let confirmationResult;
+
+  function sendOTP() {
+    const mobile = document.getElementById("mobile").value;
+
+    if (mobile.length !== 10) {
+      alert("Enter valid 10-digit mobile number");
+      return;
+    }
+
+    const phoneNumber = "+91" + mobile;
+
+    auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
+      .then(result => {
+        confirmationResult = result;
+        alert("OTP sent to your mobile 📱");
+      })
+      .catch(error => {
+        alert(error.message);
+      });
+  }
+
+  function verifyOTP() {
+    const otp = document.getElementById("otp").value;
+
+    if (!confirmationResult) {
+      alert("Please request OTP first");
+      return;
+    }
+
+    confirmationResult.confirm(otp)
+      .then(result => {
+        const user = result.user;
+
+        localStorage.setItem("loggedInUser", JSON.stringify({
+          uid: user.uid,
+          phone: user.phoneNumber
+        }));
+
+        alert("Login successful 🎉");
+        window.location.href = "index.html";
+      })
+      .catch(() => {
+        alert("Invalid OTP ❌");
+      });
+  }
+</script>
+
+<script>
+function emailLogin() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  fetch("http://localhost:3000/api/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email, password })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.token) {
+      alert(data.message || "Login failed");
+      return;
+    }
+
+    // ✅ STORE JWT TOKEN
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("loggedInUser", JSON.stringify(data.user));
+
+    alert("Login successful 🎉");
+    window.location.href = "index.html";
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Server error");
+  });
+}
+</script>
+
+</body>
+</html>

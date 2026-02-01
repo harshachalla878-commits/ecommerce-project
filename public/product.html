@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Details | Harsha</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="product-list"></div>
+<!-- ===== TOP BAR ===== -->
+<div class="navbar">
+    <div class="center-wrap">
+        <div class="logo">HARSHA</div>
+    </div>
+</div>
+
+<!-- ===== PAGE CONTAINER ===== -->
+<div class="container">
+
+    <div id="productDetails"></div>
+
+    <br>
+    <a href="index.html" style="font-weight:bold;">⬅ Back to Shop</a>
+
+</div>
+
+<script>
+let allProducts = [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+/* GET PRODUCT ID */
+const params = new URLSearchParams(window.location.search);
+const productId = Number(params.get("id"));
+
+/* FETCH PRODUCTS */
+fetch("http://localhost:3000/products")
+  .then(res => res.json())
+  .then(data => {
+    allProducts = data;
+    renderProduct();
+  });
+
+/* ⭐ STAR RENDER */
+function renderStars(rating = 4.5) {
+  let stars = "";
+  for (let i = 1; i <= 5; i++) {
+    stars += i <= Math.round(rating) ? "⭐" : "☆";
+  }
+  return stars;
+}
+
+function renderProduct() {
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) {
+    productDetails.innerHTML = "<p>Product not found</p>";
+    return;
+  }
+
+  /* BUILD SPEC TABLE */
+  let specRows = "";
+  Object.entries(p.specs || {}).forEach(([k, v]) => {
+    specRows += `
+      <tr>
+        <td style="font-weight:bold;padding:10px;width:30%;border-bottom:1px solid #ddd;">
+          ${k}
+        </td>
+        <td style="padding:10px;border-bottom:1px solid #ddd;">
+          ${v}
+        </td>
+      </tr>`;
+  });
+
+  productDetails.innerHTML = `
+
+  <!-- ===== PRODUCT MAIN ===== -->
+  <div class="product-detail">
+
+    <!-- IMAGE -->
+    <div class="product-image">
+      <img src="${p.image}" alt="${p.name}">
+    </div>
+    <!-- DETAILS -->
+    <div class="details">
+      <h2>${p.name}</h2>
+
+      <div class="rating">
+        <span class="stars">${renderStars(p.rating)}</span>
+        <span class="rating-value">${p.rating || 4.5}/5</span>
+      </div>
+
+      ${p.discountPercent ? `<p class="discount-text">🔥 ${p.discountPercent}% OFF</p>` : ""}
+
+      <div class="price-section">
+        ${p.originalPrice ? `<div class="original-price">❌ <span>₹${p.originalPrice}</span></div>` : ""}
+        <div class="discounted-price">✅ <span>₹${p.price}</span></div>
+      </div>
+
+      <p class="desc">
+        <strong>Description:</strong><br>
+        ${p.description}
+      </p>
+
+      <!-- BUTTONS -->
+      <div style="display:flex;gap:12px;margin-top:15px;">
+        <button 
+          style="flex:1;padding:12px;background:#f0c14b;border:1px solid #a88734;font-weight:bold;border-radius:6px;"
+          onclick="addToCart(${p.id})">
+          Add to Cart
+        </button>
+
+        <button 
+          style="flex:1;padding:12px;background:#ff9900;border:none;font-weight:bold;border-radius:6px;"
+          onclick="buyNow(${p.id})">
+          Buy Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SPECIFICATIONS (FORCED LEFT & BELOW) ===== -->
+  <div style="
+    width:100%;
+    background:#fff;
+    padding:20px;
+    margin-top:30px;
+    border-radius:12px;
+  ">
+
+    <h3 style="
+      text-align:left;
+      margin:0 0 15px 0;
+      font-size:22px;
+      font-weight:700;
+    ">
+      📦 Specifications
+    </h3>
+
+    ${
+      specRows
+        ? `<table style="width:100%;border-collapse:collapse;text-align:left;">
+             ${specRows}
+           </table>`
+        : `<p>Specifications not available</p>`
+    }
+
+  </div>
+  `;
+}
+
+/* ADD TO CART */
+function addToCart(id) {
+  const p = allProducts.find(x => x.id === id);
+  const e = cart.find(x => x.id === id);
+
+  if (e) e.qty++;
+  else cart.push({ ...p, qty: 1 });
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  alert("Added to cart");
+}
+
+/* BUY NOW */
+function buyNow(id) {
+  const p = allProducts.find(x => x.id === id);
+  localStorage.setItem("cart", JSON.stringify([{ ...p, qty: 1 }]));
+  window.location.href = "index.html";
+}
+</script>
+<script>
+  fetch("http://localhost:3000/products")
+    .then(response => response.json())
+    .then(products => {
+      const productList = document.getElementById("product-list");
+
+      productList.innerHTML = ""; // clear old content
+
+      products.forEach(product => {
+        const div = document.createElement("div");
+        div.className = "product-card";
+
+        div.innerHTML = `
+          <img src="${product.image}" alt="${product.name}" width="150">
+          <h3>${product.name}</h3>
+          <p>₹${product.price}</p>
+          <p>⭐ ${product.rating}</p>
+          <button>Add to Cart</button>
+        `;
+
+        productList.appendChild(div);
+      });
+    })
+    .catch(error => {
+      console.error("Error loading products:", error);
+    });
+</script>
+</body>
+</html>
