@@ -143,31 +143,21 @@ function emailLogin() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  fetch("http://localhost:3000/api/auth/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ email, password })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (!data.token) {
-      alert(data.message || "Login failed");
-      return;
-    }
+  const users = JSON.parse(localStorage.getItem("users")) || [];
 
-    // ✅ STORE JWT TOKEN
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("loggedInUser", JSON.stringify(data.user));
+  const user = users.find(
+    u => u.email === email && u.password === password
+  );
 
-    alert("Login successful 🎉");
-    window.location.href = "index.html";
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Server error");
-  });
+  if (!user) {
+    alert("Invalid email or password");
+    return;
+  }
+
+  localStorage.setItem("loggedInUser", JSON.stringify(user));
+
+  alert("Login successful 🎉");
+  window.location.href = "index.html";
 }
 </script>
 
